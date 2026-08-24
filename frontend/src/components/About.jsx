@@ -1,46 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, Terminal, Sparkles, Server, Database, Globe, Workflow, CheckCircle2 } from 'lucide-react';
+import {
+  Cpu, Terminal, Sparkles, Server, Database, Globe, Workflow, CheckCircle2,
+} from 'lucide-react';
+import api from '../utils/api';
+import { SkeletonSkillCard } from './Skeleton';
 
-const SKILL_CATEGORIES = [
-  {
-    title: 'AI & Machine Learning',
-    icon: <Sparkles size={20} />,
-    items: ['LLM Fine-Tuning', 'Multi-Agent Systems', 'RAG Pipelines', 'Model Context Protocol (MCP)', 'PyTorch & LangChain', 'Vector DBs (Pinecone)'],
-  },
-  {
-    title: 'Full-Stack Development',
-    icon: <Globe size={20} />,
-    items: ['React.js & Next.js', 'Node.js & Express', 'REST & GraphQL APIs', 'TailwindCSS & Vanilla CSS', 'System Architecture', 'Redux & Context API'],
-  },
-  {
-    title: 'Database & DevOps',
-    icon: <Database size={20} />,
-    items: ['MongoDB & Mongoose', 'PostgreSQL & Prisma', 'Redis Caching', 'Cloudinary & S3', 'Docker & CI/CD', 'Vercel & Render Deployment'],
-  },
-];
-
-const TIMELINE = [
-  {
-    year: '2025 - Present',
-    role: 'Autonomous AI Agent Architect',
-    description: 'Pioneering production RAG architectures, custom MCP toolkits, and LLM orchestration systems for automated enterprise workflows.',
-  },
-  {
-    year: '2024',
-    role: 'Full-Stack AI Developer',
-    description: 'Built high-throughput web applications, real-time computer vision analyzers, and scalable Node.js microservices.',
-  },
-  {
-    year: '2023',
-    role: 'Core Software & Web Engineer',
-    description: 'Focused on modern JavaScript, React ecosystems, database design, and algorithmic optimization.',
-  },
-];
+// Icon lookup (matches the icon names stored in the DB)
+const ICON_MAP = {
+  Sparkles: <Sparkles size={20} />,
+  Globe: <Globe size={20} />,
+  Database: <Database size={20} />,
+  Cpu: <Cpu size={20} />,
+  Terminal: <Terminal size={20} />,
+  Server: <Server size={20} />,
+  Workflow: <Workflow size={20} />,
+};
 
 const About = () => {
+  const [skillDomains, setSkillDomains] = useState([]);
+  const [skillsLoading, setSkillsLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/skills')
+      .then((res) => setSkillDomains(res.data))
+      .catch(() => {})
+      .finally(() => setSkillsLoading(false));
+  }, []);
+
   return (
-    <section id="about" className="section" style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+    <section
+      id="about"
+      className="section"
+      style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}
+    >
       <div className="container">
         {/* Section Header */}
         <motion.div
@@ -79,77 +72,57 @@ const About = () => {
           </p>
         </motion.div>
 
-        {/* Key Skills Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '28px', marginBottom: '80px' }}>
-          {SKILL_CATEGORIES.map((cat, idx) => (
-            <motion.div
-              key={cat.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: idx * 0.15 }}
-              style={{
-                background: 'var(--card-bg)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius-md)',
-                padding: '28px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ padding: '10px', background: 'var(--badge-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
-                  {cat.icon}
-                </div>
-                <h4 style={{ fontSize: '1.2rem' }}>{cat.title}</h4>
-              </div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {cat.items.map((item) => (
-                  <li key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                    <CheckCircle2 size={16} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Learning / Experience Timeline */}
+        {/* Key Skills Grid — DB driven with skeleton */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
+          style={{ marginBottom: 10 }}
         >
-          <h3 style={{ fontSize: '1.75rem', textAlign: 'center', marginBottom: '40px' }}>Journey & Milestones</h3>
-          <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {TIMELINE.map((item, index) => (
+          <h3 style={{ fontSize: '1.5rem', marginBottom: '24px' }}>Skills & Concepts</h3>
+        </motion.div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '28px', marginBottom: '80px' }}>
+          {skillsLoading
+            ? [...Array(3)].map((_, i) => <SkeletonSkillCard key={i} />)
+            : skillDomains.length === 0
+            ? (
+              <p style={{ color: 'var(--text-muted)', gridColumn: '1/-1' }}>
+                No skills added yet — add them from the Profile page.
+              </p>
+            )
+            : skillDomains.map((cat, idx) => (
               <motion.div
-                key={item.role}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                key={cat._id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                transition={{ duration: 0.6, delay: idx * 0.12 }}
                 style={{
                   background: 'var(--card-bg)',
                   border: '1px solid var(--border-color)',
                   borderRadius: 'var(--radius-md)',
-                  padding: '24px 28px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
+                  padding: '28px',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                  <h4 style={{ fontSize: '1.15rem' }}>{item.role}</h4>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '4px 12px', background: 'var(--badge-bg)', border: '1px solid var(--border-color)', borderRadius: 999 }}>
-                    {item.year}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ padding: '10px', background: 'var(--badge-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                    {ICON_MAP[cat.icon] || <Cpu size={20} />}
+                  </div>
+                  <h4 style={{ fontSize: '1.2rem' }}>{cat.title}</h4>
                 </div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6' }}>{item.description}</p>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {cat.items.map((item) => (
+                    <li key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                      <CheckCircle2 size={16} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
             ))}
-          </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

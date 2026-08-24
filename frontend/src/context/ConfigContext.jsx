@@ -2,10 +2,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import api from '../utils/api';
 import defaultConfig from '../config';
 
-const ConfigContext = createContext(defaultConfig);
+const ConfigContext = createContext({ ...defaultConfig, otherLinks: [], configLoading: true });
 
 export const ConfigProvider = ({ children }) => {
-  const [siteConfig, setSiteConfig] = useState(defaultConfig);
+  const [siteConfig, setSiteConfig] = useState({ ...defaultConfig, otherLinks: [], configLoading: true });
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -24,9 +24,12 @@ export const ConfigProvider = ({ children }) => {
             twitter: data.social?.twitter || defaultConfig.social.twitter,
             email: data.social?.email || defaultConfig.social.email,
           },
+          otherLinks: data.otherLinks || [],
+          configLoading: false,
         });
       } catch (e) {
         // Fall back to defaults silently
+        setSiteConfig((prev) => ({ ...prev, configLoading: false }));
       }
     };
     fetchConfig();
@@ -36,3 +39,4 @@ export const ConfigProvider = ({ children }) => {
 };
 
 export const useSiteConfig = () => useContext(ConfigContext);
+

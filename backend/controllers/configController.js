@@ -15,14 +15,14 @@ export const getConfig = async (req, res) => {
   }
 };
 
-// PUT /api/config  — admin only, updates social links
+// PUT /api/config  — admin only, updates social links, otherLinks, etc.
 export const updateConfig = async (req, res) => {
   try {
-    const { social, resumeUrl, ownerName, tagline } = req.body;
+    const { social, otherLinks, resumeUrl, ownerName, tagline } = req.body;
 
     const config = await SiteConfig.findOneAndUpdate(
       { key: 'main' },
-      { $set: { social, resumeUrl, ownerName, tagline } },
+      { $set: { social, otherLinks, resumeUrl, ownerName, tagline } },
       { upsert: true, new: true, runValidators: true }
     );
 
@@ -32,3 +32,4 @@ export const updateConfig = async (req, res) => {
     res.status(500).json({ message: 'Failed to update site config' });
   }
 };
+

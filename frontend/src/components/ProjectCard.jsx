@@ -138,10 +138,14 @@ const ProjectCard = ({ project, onEdit, onDelete, onClickDetail }) => {
       {/* Card Body Content */}
       <div className="card-content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="card-category">{project.category}</span>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Eye size={12} /> {project.count || 0} views
+            {project.category}
           </span>
+          {isAdmin && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Eye size={12} /> {project.count || 0} views
+            </span>
+          )}
         </div>
 
         <h3

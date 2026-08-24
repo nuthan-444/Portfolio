@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ExternalLink, Github, ChevronLeft, ChevronRight, Calendar, Tag } from 'lucide-react';
 import { getOptimizedImageUrl, preloadImage } from '../utils/imageOptimizer';
+import api from '../utils/api';
 
 const ProjectDetailModal = ({ project, onClose }) => {
   const [currentImg, setCurrentImg] = useState(0);
@@ -18,6 +19,15 @@ const ProjectDetailModal = ({ project, onClose }) => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
+
+  // Fire view-count increment — small delay to avoid counting accidental opens
+  useEffect(() => {
+    if (!project?._id || project._id.startsWith('proj_')) return; // skip memory-fallback IDs
+    const timer = setTimeout(() => {
+      api.get(`/projects/${project._id}`).catch(() => {}); // fire & forget
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [project?._id]);
 
   if (!project) return null;
 

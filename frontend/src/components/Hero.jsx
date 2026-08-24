@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useSiteConfig } from '../context/ConfigContext';
+import { getLinkIcon } from '../utils/linkIcons';
 
 const Hero = () => {
   const canvasRef = useRef(null);
@@ -82,11 +83,30 @@ const Hero = () => {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <a href={config.social.github} target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href={config.social.twitter} target="_blank" rel="noopener noreferrer">Twitter</a>
-        <a href={config.social.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
-        <a href={`mailto:${config.social.email}`}>Email</a>
+        {config.configLoading ? (
+          // Skeleton placeholders while config is fetching
+          <>
+            {['GitHub', 'Twitter', 'LinkedIn', 'Email'].map((t) => (
+              <span key={t} style={{ opacity: 0.35 }}>{t}</span>
+            ))}
+          </>
+        ) : (
+          <>
+            {config.social.github && <a href={config.social.github} target="_blank" rel="noopener noreferrer">GitHub</a>}
+            {config.social.twitter && <a href={config.social.twitter} target="_blank" rel="noopener noreferrer">Twitter</a>}
+            {config.social.linkedin && <a href={config.social.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>}
+            {config.social.email && <a href={`mailto:${config.social.email}`}>Email</a>}
+            {(config.otherLinks || []).map((link) => (
+              <a key={link._id || link.name} href={link.url} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {getLinkIcon(link, 14)}{link.name}
+              </a>
+            ))}
+          </>
+        )}
       </motion.div>
+
 
       {/* Centered Hero Content */}
       <div className="container" style={{ position: 'relative', zIndex: 10 }}>
@@ -96,14 +116,54 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             transition={{ duration: 0.85, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              fontSize: 'clamp(2.6rem, 6vw, 5rem)',
+              fontSize: 'clamp(1rem, 6vw, 5rem)',
               fontWeight: 800,
               letterSpacing: '-0.03em',
               lineHeight: 1.1,
               marginBottom: '20px',
+              overflow: 'visible',
             }}
           >
-            {config.ownerName || 'Nuthan Prasad KG'}
+            {/* Stylised name: NuthanK GPrasad — K behind 'n', G behind 'P' */}
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '0.35em', whiteSpace: 'nowrap', justifyContent: 'center' }}>
+
+              {/* "NuthanK" — K sits behind the trailing n */}
+              <span style={{ position: 'relative', display: 'inline-block' }}>
+                <span style={{
+                  position: 'absolute',
+                  right: '-0.22em',
+                  bottom: '-0.3em',
+                  fontSize: '3em',
+                  fontWeight: 900,
+                  opacity: 0.18,
+                  zIndex: 0,
+                  lineHeight: 1,
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  marginRight: 'clamp(10px, 3.5vw, 50px)',
+                }}>K</span>
+                <span style={{ position: 'relative', zIndex: 1, letterSpacing: 'clamp(3px, 1.5vw, 20px)' }}>Nuthan</span>
+              </span>
+
+              {/* "GPrasad" — G sits behind the leading P */}
+              <span style={{ position: 'relative', display: 'inline-block' }}>
+                <span style={{
+                  position: 'absolute',
+                  left: '-0.22em',
+                  bottom: '-0.3em',
+                  fontSize: '3em',
+                  fontWeight: 900,
+                  opacity: 0.18,
+                  zIndex: 0,
+                  lineHeight: 1,
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  marginLeft: 'clamp(5px, 2vw, 30px)',
+                }}>G</span>
+                <span style={{ position: 'relative', zIndex: 1, letterSpacing: 'clamp(3px, 1.5vw, 20px)' }}>Prasad</span>
+              </span>
+
+            </span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 25, filter: 'blur(6px)' }}
@@ -113,6 +173,7 @@ const Hero = () => {
               fontSize: 'clamp(1rem, 2.2vw, 1.35rem)',
               color: 'var(--text-secondary)',
               fontWeight: 500,
+              marginTop: "40px",
               marginBottom: '44px',
             }}
           >

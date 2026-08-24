@@ -72,7 +72,10 @@ const Projects = ({ onAddProject, onEditProject, onDeleteProject }) => {
       {selectedProject && (
         <ProjectDetailModal
           project={selectedProject}
-          onClose={() => setSelectedProject(null)}
+          onClose={() => {
+            setSelectedProject(null);
+            if (isAdmin) fetchProjects(); // refresh count for admin
+          }}
         />
       )}
     </div>

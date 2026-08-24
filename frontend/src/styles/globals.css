@@ -764,14 +764,46 @@ button {
 }
 
 /* Typography Utility Classes for Font Exploration */
-.font-tektur { font-family: var(--font-tektur) !important; }
-.font-zen-dots { font-family: var(--font-zen) !important; }
-.font-pixel { font-family: var(--font-pixel) !important; }
-.font-doto { font-family: var(--font-dot) !important; }
-.font-vt323 { font-family: var(--font-retro) !important; }
-.font-spectral { font-family: var(--font-serif) !important; }
-.font-montserrat { font-family: var(--font-main) !important; }
-.font-roboto-mono { font-family: var(--font-mono) !important; }
-.font-bytesized { font-family: 'Bytesized', cursive !important; }
-.font-work-sans { font-family: 'Work Sans', sans-serif !important; }
-.font-outfit { font-family: 'Outfit', sans-serif !important; }
+.font-tektur {
+  font-family: var(--font-tektur) !important;
+}
+
+.font-zen-dots {
+  font-family: var(--font-zen) !important;
+}
+
+.font-pixel {
+  font-family: var(--font-pixel) !important;
+}
+
+.font-doto {
+  font-family: var(--font-dot) !important;
+}
+
+.font-vt323 {
+  font-family: var(--font-retro) !important;
+}
+
+.font-spectral {
+  font-family: var(--font-serif) !important;
+}
+
+.font-montserrat {
+  font-family: var(--font-main) !important;
+}
+
+.font-roboto-mono {
+  font-family: var(--font-mono) !important;
+}
+
+.font-bytesized {
+  font-family: 'Bytesized', cursive !important;
+}
+
+.font-work-sans {
+  font-family: 'Work Sans', sans-serif !important;
+}
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif !important;
+}
