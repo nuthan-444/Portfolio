@@ -8,6 +8,7 @@ import projectRoutes from './routes/projects.js';
 import messageRoutes from './routes/messages.js';
 import configRoutes from './routes/config.js';
 import skillsRoutes from './routes/skills.js';
+import websiteRequestRoutes from './routes/websiteRequests.js';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/skills', skillsRoutes);
+app.use('/api/website-requests', websiteRequestRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

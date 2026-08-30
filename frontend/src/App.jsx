@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import Projects from './pages/Projects';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
+import RequestWebsite from './pages/RequestWebsite';
+import WebsiteRequests from './pages/WebsiteRequests';
 import ProjectModal from './components/ProjectModal';
 import MessagesModal from './components/MessagesModal';
 import api from './utils/api';
@@ -77,6 +79,8 @@ function App() {
           />
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/request" element={<RequestWebsite />} />
+          <Route path="/admin/requests" element={<WebsiteRequests />} />
         </Routes>
       </main>
 

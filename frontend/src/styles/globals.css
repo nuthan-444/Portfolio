@@ -198,6 +198,89 @@ button {
   padding: 0;
 }
 
+/* Desktop nav wrapper — hidden on mobile */
+.nav-desktop {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Mobile hamburger area — hidden on desktop */
+.nav-mobile-right {
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Mobile full-width dropdown panel */
+.mobile-menu {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  padding: 20px 20px 24px;
+}
+[data-theme='dark'] .mobile-menu {
+  background: rgba(12, 12, 15, 0.96);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+}
+
+.mobile-nav-links {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.mobile-nav-link {
+  display: block;
+  padding: 11px 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-left: 2px solid transparent;
+  transition: all 0.2s ease;
+  font-family: var(--font-main);
+}
+.mobile-nav-link:hover, .mobile-nav-link.active {
+  color: var(--text-primary);
+  border-left-color: var(--text-primary);
+  padding-left: 16px;
+}
+
+.mobile-admin-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}
+
+.mobile-admin-btn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--badge-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.mobile-admin-btn:hover {
+  border-color: var(--text-secondary);
+}
+
 /* Stacked Logo Style matching reference image */
 .nav-logo-stacked {
   display: flex;
@@ -275,14 +358,16 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--badge-bg);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--text-primary);
   transition: all 0.25s ease;
 }
 
 .theme-toggle:hover {
   transform: scale(1.08);
+  border-color: var(--border-color);
+  background: var(--badge-bg);
 }
 
 /* Reference UI Style: Left Vertical Social Bar */
@@ -702,8 +787,12 @@ button {
     padding: 0 16px;
   }
 
-  .nav-links {
+  .nav-desktop {
     display: none;
+  }
+
+  .nav-mobile-right {
+    display: flex;
   }
 
   .section {

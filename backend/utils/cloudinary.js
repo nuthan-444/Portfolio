@@ -9,21 +9,16 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || 'secret',
 });
 
+/* ── Images only (for project thumbnails) ─────────────────── */
 export const uploadToCloudinary = async (fileBuffer, folder = 'portfolio_projects') => {
   try {
-    if (
-      !process.env.CLOUDINARY_CLOUD_NAME ||
-      process.env.CLOUDINARY_CLOUD_NAME === 'demo'
-    ) {
-      // Fallback data-uri for smooth local development without live Cloudinary keys
+    if (!process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME === 'demo') {
       const base64 = fileBuffer.toString('base64');
-      const dataUrl = `data:image/jpeg;base64,${base64}`;
       return {
-        url: dataUrl,
+        url: `data:image/jpeg;base64,${base64}`,
         publicId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       };
     }
-
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -37,31 +32,50 @@ export const uploadToCloudinary = async (fileBuffer, folder = 'portfolio_project
         },
         (error, result) => {
           if (error) return reject(error);
-          resolve({
-            url: result.secure_url,
-            publicId: result.public_id,
-          });
+          resolve({ url: result.secure_url, publicId: result.public_id });
         }
       );
       uploadStream.end(fileBuffer);
     });
   } catch (error) {
     console.error('Cloudinary upload error:', error);
-    // Return base64 data-uri as graceful fallback
     const base64 = fileBuffer.toString('base64');
-    return {
-      url: `data:image/jpeg;base64,${base64}`,
-      publicId: `fallback_${Date.now()}`,
-    };
+    return { url: `data:image/jpeg;base64,${base64}`, publicId: `fallback_${Date.now()}` };
   }
 };
 
-export const deleteFromCloudinary = async (publicId) => {
-  if (!publicId || publicId.startsWith('local_') || publicId.startsWith('fallback_')) {
-    return true;
+/* ── Images OR PDFs (resource_type: 'auto') ───────────────── */
+export const uploadFileToCloudinary = async (fileBuffer, originalName, folder = 'portfolio_request_files') => {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME === 'demo') {
+    return { url: null, publicId: `local_${Date.now()}`, originalName, resourceType: 'raw' };
   }
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: 'auto', // handles images + PDFs
+        public_id: `${Date.now()}_${originalName.replace(/\s+/g, '_')}`,
+        use_filename: false,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve({
+          url: result.secure_url,
+          publicId: result.public_id,
+          originalName,
+          resourceType: result.resource_type,
+        });
+      }
+    );
+    uploadStream.end(fileBuffer);
+  });
+};
+
+/* ── Delete from Cloudinary ───────────────────────────────── */
+export const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
+  if (!publicId || publicId.startsWith('local_') || publicId.startsWith('fallback_')) return true;
   try {
-    await cloudinary.uploader.destroy(publicId);
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
     return true;
   } catch (error) {
     console.error('Cloudinary delete error:', error.message);
