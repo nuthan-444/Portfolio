@@ -98,10 +98,12 @@ const GlassStyles = () => (
       padding: 28px;
       cursor: default;
       transition:
-        transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
+        transform 0.25s ease,
         box-shadow 0.35s ease,
         background 0.35s ease,
         border-color 0.35s ease;
+      transform-style: preserve-3d;
+      perspective: 800px;
     }
     [data-theme='dark'] .about-skill-glass {
       background: rgba(24,24,27,0.50);
@@ -133,26 +135,7 @@ const GlassStyles = () => (
       );
     }
 
-    /* Spotlight circle that follows mouse */
-    .about-skill-glass::after {
-      content: '';
-      position: absolute;
-      width: 300px; height: 300px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.08) 40%, transparent 70%);
-      transform: translate(-50%, -50%);
-      left: var(--mx, 50%);
-      top: var(--my, 50%);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-    }
-    [data-theme='dark'] .about-skill-glass::after {
-      background: radial-gradient(circle, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 40%, transparent 70%);
-    }
-
     .about-skill-glass:hover {
-      transform: translateY(-8px) scale(1.02);
       background: rgba(255,255,255,0.72);
       border-color: rgba(0,0,0,0.18);
       box-shadow:
@@ -168,30 +151,22 @@ const GlassStyles = () => (
         0 1px 0 rgba(255,255,255,0.08) inset;
     }
 
-    .about-skill-glass:hover::after {
-      opacity: 1;
-    }
-
-    /* Icon badge */
+    /* Icon badge — no bg, just the icon */
     .about-icon-badge {
       padding: 10px;
-      background: rgba(0,0,0,0.06);
-      border: 1px solid rgba(0,0,0,0.10);
+      background: transparent;
+      border: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.3s ease, transform 0.3s ease;
-    }
-    [data-theme='dark'] .about-icon-badge {
-      background: rgba(255,255,255,0.07);
-      border-color: rgba(255,255,255,0.10);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), filter 0.3s ease;
     }
     .about-skill-glass:hover .about-icon-badge {
-      background: rgba(0,0,0,0.12);
-      transform: scale(1.1) rotate(-4deg);
+      transform: scale(1.25) perspective(300px) rotateX(-12deg) rotateY(12deg);
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
     }
     [data-theme='dark'] .about-skill-glass:hover .about-icon-badge {
-      background: rgba(255,255,255,0.12);
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
     }
 
     /* List item hover */
@@ -229,8 +204,16 @@ const SkillCard = ({ cat, idx }) => {
     const rect = ref.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    ref.current.style.setProperty('--mx', `${x}px`);
-    ref.current.style.setProperty('--my', `${y}px`);
+    // 3D tilt: map cursor position → rotateX/Y
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const rotateX = ((y - cy) / cy) * -10;
+    const rotateY = ((x - cx) / cx) * 10;
+    ref.current.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
+  };
+
+  const handleMouseLeave = () => {
+    ref.current.style.transform = '';
   };
 
   return (
@@ -242,6 +225,7 @@ const SkillCard = ({ cat, idx }) => {
       transition={{ duration: 0.6, delay: idx * 0.12 }}
       className="about-skill-glass"
       onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', position: 'relative', zIndex: 1 }}>
         <div className="about-icon-badge">

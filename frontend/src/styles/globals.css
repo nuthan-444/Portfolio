@@ -374,22 +374,29 @@ button {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: none;
   color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.8rem;
   font-weight: 700;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.3s ease;
+  box-shadow: none;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease;
+  transform-style: preserve-3d;
+  perspective: 400px;
+  cursor: default;
 }
 
 .orbit-badge-item:hover {
-  transform: scale(1.2);
+  transform: scale(1.35) perspective(400px) rotateX(-15deg) rotateY(15deg);
   z-index: 10;
-  border-color: var(--text-primary);
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
+}
+
+[data-theme='dark'] .orbit-badge-item:hover {
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.6));
 }
 
 /* Buttons */
