@@ -1,4 +1,4 @@
-import Message from '../models/Message.js';
+import { getDB, toObjectId } from '../config/db.js';
 import { sendContactNotificationEmail } from '../utils/mailer.js';
 
 let memoryMessages = [
@@ -42,9 +42,18 @@ export const createMessage = async (c) => {
   try {
     let newMessage;
     const createdAt = new Date();
+    const db = await getDB(c);
 
-    if (Message.db && Message.db.readyState === 1) {
-      newMessage = await Message.create({ name, email, message, isRead: false, createdAt });
+    if (db) {
+      const doc = {
+        name: name.trim(),
+        email: email.trim(),
+        message,
+        isRead: false,
+        createdAt,
+      };
+      const result = await db.collection('messages').insertOne(doc);
+      newMessage = { _id: result.insertedId, ...doc };
     } else {
       newMessage = {
         _id: `msg_${Date.now()}`,
@@ -57,13 +66,11 @@ export const createMessage = async (c) => {
       memoryMessages.unshift(newMessage);
     }
 
-    // Fire-and-forget email notification
     const env = {
       ADMIN_EMAIL: c.env?.ADMIN_EMAIL,
-      SMTP_HOST: c.env?.SMTP_HOST,
-      SMTP_PORT: c.env?.SMTP_PORT,
+      SMTP_FROM_EMAIL: c.env?.SMTP_FROM_EMAIL,
       SMTP_USER: c.env?.SMTP_USER,
-      SMTP_PASS: c.env?.SMTP_PASS,
+      SMTP2GO_API_KEY: c.env?.SMTP2GO_API_KEY,
     };
     sendContactNotificationEmail({ name, email, message, createdAt }, env).catch(() => {});
 
@@ -79,9 +86,11 @@ export const createMessage = async (c) => {
 
 export const getMessages = async (c) => {
   try {
-    if (Message.db && Message.db.readyState === 1) {
-      const messages = await Message.find().sort({ createdAt: -1 });
-      const unreadCount = await Message.countDocuments({ isRead: false });
+    const db = await getDB(c);
+    if (db) {
+      const col = db.collection('messages');
+      const messages = await col.find().sort({ createdAt: -1 }).toArray();
+      const unreadCount = await col.countDocuments({ isRead: false });
       return c.json({ messages, unreadCount });
     }
 
@@ -97,13 +106,21 @@ export const markMessageAsRead = async (c) => {
   const { id } = c.req.param();
 
   try {
-    if (Message.db && Message.db.readyState === 1) {
-      const msg = await Message.findById(id);
+    const db = await getDB(c);
+    if (db) {
+      const oid = toObjectId(id);
+      if (!oid) return c.json({ message: 'Message not found' }, 404);
+      const col = db.collection('messages');
+      const msg = await col.findOne({ _id: oid });
       if (!msg) return c.json({ message: 'Message not found' }, 404);
-      msg.isRead = !msg.isRead;
-      await msg.save();
-      const unreadCount = await Message.countDocuments({ isRead: false });
-      return c.json({ message: msg, unreadCount });
+
+      const updated = await col.findOneAndUpdate(
+        { _id: oid },
+        { $set: { isRead: !msg.isRead } },
+        { returnDocument: 'after' }
+      );
+      const unreadCount = await col.countDocuments({ isRead: false });
+      return c.json({ message: updated, unreadCount });
     }
 
     const idx = memoryMessages.findIndex((m) => m._id === id);
@@ -121,9 +138,13 @@ export const deleteMessage = async (c) => {
   const { id } = c.req.param();
 
   try {
-    if (Message.db && Message.db.readyState === 1) {
-      await Message.findByIdAndDelete(id);
-      const unreadCount = await Message.countDocuments({ isRead: false });
+    const db = await getDB(c);
+    if (db) {
+      const oid = toObjectId(id);
+      if (!oid) return c.json({ message: 'Message not found' }, 404);
+      const col = db.collection('messages');
+      await col.deleteOne({ _id: oid });
+      const unreadCount = await col.countDocuments({ isRead: false });
       return c.json({ message: 'Message deleted successfully', unreadCount });
     }
 

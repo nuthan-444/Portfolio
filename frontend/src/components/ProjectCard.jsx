@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExternalLink, Github, Edit2, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ExternalLink, Github, Edit2, Trash2, Eye, Code2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getOptimizedImageUrl, preloadImage } from '../utils/imageOptimizer';
 
@@ -41,15 +41,28 @@ const ProjectCard = ({ project, onEdit, onDelete, onClickDetail }) => {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="project-card"
+      className={`project-card ${project.isHardCoded ? 'project-card--hardcoded' : ''}`}
       onMouseEnter={handleMouseEnter}
     >
+      {project.isHardCoded && (
+        <div
+          className="hardcoded-strip"
+          title="100% hand-coded from scratch without AI code generation"
+        >
+          <span className="hardcoded-strip-left">
+            <Code2 size={13} />
+            <span>Hard-Coded</span>
+          </span>
+          <span className="hardcoded-strip-tag">Built Without AI</span>
+        </div>
+      )}
+
       {/* Admin Quick Action Controls */}
       {isAdmin && (
         <div
           style={{
             position: 'absolute',
-            top: '12px',
+            top: project.isHardCoded ? '42px' : '12px',
             right: '12px',
             zIndex: 30,
             display: 'flex',
@@ -138,8 +151,13 @@ const ProjectCard = ({ project, onEdit, onDelete, onClickDetail }) => {
       {/* Card Body Content */}
       <div className="card-content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-            {project.category}
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>{project.category}</span>
+            {(project.projectDate || project.createdAt) && (
+              <span>
+                • {new Date(project.projectDate || project.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short' })}
+              </span>
+            )}
           </span>
           {isAdmin && (
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { connectDB } from './config/db.js';
+import { getDB, closeDB } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
 import messageRoutes from './routes/messages.js';
@@ -62,15 +62,14 @@ const contactLimiter = createRateLimiter({
   message: { message: 'Too many messages sent. Please wait a bit before trying again.' },
 });
 
-// ── Connect DB once per Worker isolate startup ──────────────────────────────
-// This runs lazily on first request; subsequent requests reuse the connection.
-let dbConnected = false;
+// ── Request-scoped DB cleanup ───────────────────────────────────────────────
+// Any MongoClient opened via getDB(c) during the request is closed when done.
 app.use('*', async (c, next) => {
-  if (!dbConnected) {
-    const uri = c.env?.MONGODB_URI;
-    dbConnected = await connectDB(uri);
+  try {
+    await next();
+  } finally {
+    await closeDB(c);
   }
-  await next();
 });
 
 // ── Apply route-level rate limiters ────────────────────────────────────────
@@ -91,9 +90,13 @@ app.route('/api/skills', skillsRoutes);
 app.route('/api/website-requests', websiteRequestRoutes);
 
 // ── Health Check ────────────────────────────────────────────────────────────
-app.get('/api/health', (c) => {
+app.get('/api/health', async (c) => {
+  const db = await getDB(c);
+  const dbError = c.get('dbError');
   return c.json({
     status: 'OK',
+    db: db ? 'connected' : 'disconnected',
+    ...(dbError ? { dbError } : {}),
     timestamp: new Date().toISOString(),
     owner: 'Nuthan Prasad KG',
     runtime: 'Cloudflare Workers',

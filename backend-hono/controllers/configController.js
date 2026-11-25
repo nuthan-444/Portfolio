@@ -1,21 +1,60 @@
-import SiteConfig from '../models/SiteConfig.js';
+import { getDB } from '../config/db.js';
+
+// Default fallback config when MongoDB is not connected
+const defaultConfig = {
+  key: 'main',
+  social: {
+    github: 'https://github.com/nuthanprasadkg',
+    linkedin: '',
+    twitter: '',
+    email: 'forcodingstuffs@gmail.com',
+  },
+  otherLinks: [],
+  resumeUrl: '',
+  ownerName: 'Nuthan Prasad KG',
+  tagline: 'Full-Stack Developer & AI/ML Engineer in India',
+};
 
 // GET /api/config  — public
 export const getConfig = async (c) => {
   try {
-    let config = await SiteConfig.findOne({ key: 'main' });
-    if (!config) {
-      config = await SiteConfig.create({ key: 'main' });
+    const db = await getDB(c);
+    if (db) {
+      const col = db.collection('siteconfigs');
+      let config = await col.findOne({ key: 'main' });
+      if (!config) {
+        const now = new Date();
+        const initial = {
+          key: 'main',
+          social: { github: '', linkedin: '', twitter: '', email: '' },
+          otherLinks: [],
+          resumeUrl: '',
+          ownerName: 'Nuthan Prasad KG',
+          tagline: 'Full-Stack Developer & AI/ML Engineer in India',
+          createdAt: now,
+          updatedAt: now,
+        };
+        const res = await col.insertOne(initial);
+        config = { _id: res.insertedId, ...initial };
+      }
+      return c.json(config);
     }
-    return c.json(config);
+
+    console.warn('[Config] MongoDB not connected — returning default config');
+    return c.json(defaultConfig);
   } catch (err) {
     console.error('[Config] getConfig error:', err.message);
-    return c.json({ message: 'Failed to fetch site config' }, 500);
+    return c.json(defaultConfig);
   }
 };
 
 // PUT /api/config  — admin only
 export const updateConfig = async (c) => {
+  const db = await getDB(c);
+  if (!db) {
+    return c.json({ message: 'Database not connected. Cannot update config.' }, 503);
+  }
+
   try {
     let body;
     try {
@@ -25,11 +64,21 @@ export const updateConfig = async (c) => {
     }
 
     const { social, otherLinks, resumeUrl, ownerName, tagline } = body;
+    const now = new Date();
+    const updates = { updatedAt: now };
+    if (social !== undefined) updates.social = social;
+    if (otherLinks !== undefined) updates.otherLinks = otherLinks;
+    if (resumeUrl !== undefined) updates.resumeUrl = resumeUrl;
+    if (ownerName !== undefined) updates.ownerName = ownerName;
+    if (tagline !== undefined) updates.tagline = tagline;
 
-    const config = await SiteConfig.findOneAndUpdate(
+    const config = await db.collection('siteconfigs').findOneAndUpdate(
       { key: 'main' },
-      { $set: { social, otherLinks, resumeUrl, ownerName, tagline } },
-      { upsert: true, new: true, runValidators: true }
+      {
+        $set: updates,
+        $setOnInsert: { key: 'main', createdAt: now },
+      },
+      { upsert: true, returnDocument: 'after' }
     );
 
     return c.json({ message: 'Site config updated successfully', config });

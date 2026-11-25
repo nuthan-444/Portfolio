@@ -1,4 +1,4 @@
-import WebsiteRequest from '../models/WebsiteRequest.js';
+import { getDB, toObjectId } from '../config/db.js';
 import { uploadFileToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
 
 let memRequests = [];
@@ -66,15 +66,16 @@ export const createWebsiteRequest = async (c) => {
   }
 
   const data = {
-    fullName, email,
-    phone: phone || '',
-    company: company || '',
+    fullName: String(fullName).trim(),
+    email: String(email).trim(),
+    phone: phone ? String(phone).trim() : '',
+    company: company ? String(company).trim() : '',
     websiteType,
     projectDescription,
     features: Array.isArray(features) ? features : features ? [features] : [],
     hasExistingWebsite: hasExistingWebsite === 'true' || hasExistingWebsite === true,
-    existingWebsiteUrl: existingWebsiteUrl || '',
-    referenceUrl: referenceUrl || '',
+    existingWebsiteUrl: existingWebsiteUrl ? String(existingWebsiteUrl).trim() : '',
+    referenceUrl: referenceUrl ? String(referenceUrl).trim() : '',
     uploadedFiles,
     budget,
     timeline: timeline || '',
@@ -86,8 +87,10 @@ export const createWebsiteRequest = async (c) => {
 
   try {
     let saved;
-    if (WebsiteRequest.db && WebsiteRequest.db.readyState === 1) {
-      saved = await WebsiteRequest.create(data);
+    const db = await getDB(c);
+    if (db) {
+      const res = await db.collection('websiterequests').insertOne(data);
+      saved = { _id: res.insertedId, ...data };
     } else {
       saved = { _id: `req_${Date.now()}`, ...data };
       memRequests.unshift(saved);
@@ -102,9 +105,11 @@ export const createWebsiteRequest = async (c) => {
 /* ── Admin: get all requests ───────────────────────────────── */
 export const getWebsiteRequests = async (c) => {
   try {
-    if (WebsiteRequest.db && WebsiteRequest.db.readyState === 1) {
-      const requests = await WebsiteRequest.find().sort({ createdAt: -1 });
-      const unreadCount = await WebsiteRequest.countDocuments({ isRead: false });
+    const db = await getDB(c);
+    if (db) {
+      const col = db.collection('websiterequests');
+      const requests = await col.find().sort({ createdAt: -1 }).toArray();
+      const unreadCount = await col.countDocuments({ isRead: false });
       return c.json({ requests, unreadCount });
     }
     const unreadCount = memRequests.filter((r) => !r.isRead).length;
@@ -119,13 +124,21 @@ export const getWebsiteRequests = async (c) => {
 export const toggleWebsiteRequestRead = async (c) => {
   const { id } = c.req.param();
   try {
-    if (WebsiteRequest.db && WebsiteRequest.db.readyState === 1) {
-      const doc = await WebsiteRequest.findById(id);
+    const db = await getDB(c);
+    if (db) {
+      const oid = toObjectId(id);
+      if (!oid) return c.json({ message: 'Request not found.' }, 404);
+      const col = db.collection('websiterequests');
+      const doc = await col.findOne({ _id: oid });
       if (!doc) return c.json({ message: 'Request not found.' }, 404);
-      doc.isRead = !doc.isRead;
-      await doc.save();
-      const unreadCount = await WebsiteRequest.countDocuments({ isRead: false });
-      return c.json({ request: doc, unreadCount });
+
+      const updated = await col.findOneAndUpdate(
+        { _id: oid },
+        { $set: { isRead: !doc.isRead } },
+        { returnDocument: 'after' }
+      );
+      const unreadCount = await col.countDocuments({ isRead: false });
+      return c.json({ request: updated, unreadCount });
     }
     const idx = memRequests.findIndex((r) => r._id === id);
     if (idx === -1) return c.json({ message: 'Request not found.' }, 404);
@@ -147,13 +160,17 @@ export const deleteWebsiteRequest = async (c) => {
 
   try {
     let uploadedFiles = [];
+    const db = await getDB(c);
 
-    if (WebsiteRequest.db && WebsiteRequest.db.readyState === 1) {
-      const doc = await WebsiteRequest.findById(id);
+    if (db) {
+      const oid = toObjectId(id);
+      if (!oid) return c.json({ message: 'Request not found.' }, 404);
+      const col = db.collection('websiterequests');
+      const doc = await col.findOne({ _id: oid });
       if (!doc) return c.json({ message: 'Request not found.' }, 404);
       uploadedFiles = doc.uploadedFiles || [];
-      await WebsiteRequest.findByIdAndDelete(id);
-      const unreadCount = await WebsiteRequest.countDocuments({ isRead: false });
+      await col.deleteOne({ _id: oid });
+      const unreadCount = await col.countDocuments({ isRead: false });
 
       for (const file of uploadedFiles) {
         deleteFromCloudinary(file.publicId, file.resourceType || 'raw', cloudName, cloudKey, cloudSecret).catch(() => {});

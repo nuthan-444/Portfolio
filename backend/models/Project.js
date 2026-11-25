@@ -41,6 +41,13 @@ const projectSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  projectDate: {
+    type: Date,
+  },
+  isHardCoded: {
+    type: Boolean,
+    default: false,
+  },
   count: {
     type: Number,
     default: 0,

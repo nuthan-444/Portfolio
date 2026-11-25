@@ -1,5 +1,5 @@
 import { verify } from 'hono/jwt';
-import User from '../models/User.js';
+import { getDB, toObjectId } from '../config/db.js';
 
 export const protectAdmin = async (c, next) => {
   const authHeader = c.req.header('Authorization');
@@ -17,15 +17,13 @@ export const protectAdmin = async (c, next) => {
 
     const decoded = await verify(token, jwtSecret);
 
-    // Check if MongoDB is connected or fallback to token payload
     let user = null;
-    if (
-      User.db &&
-      User.db.readyState === 1 &&
-      decoded.id &&
-      String(decoded.id).length === 24
-    ) {
-      user = await User.findById(decoded.id).select('-password');
+    const db = await getDB(c);
+    const oid = toObjectId(decoded.id ? String(decoded.id) : '');
+    if (db && oid) {
+      user = await db
+        .collection('users')
+        .findOne({ _id: oid }, { projection: { password: 0 } });
     }
 
     if (!user) {

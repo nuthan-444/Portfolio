@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink, Github, ChevronLeft, ChevronRight, Calendar, Tag } from 'lucide-react';
+import { X, ExternalLink, Github, ChevronLeft, ChevronRight, Calendar, Tag, Code2 } from 'lucide-react';
 import { getOptimizedImageUrl, preloadImage } from '../utils/imageOptimizer';
 import api from '../utils/api';
 
@@ -47,8 +47,9 @@ const ProjectDetailModal = ({ project, onClose }) => {
   const prevImg = () => setCurrentImg((p) => (p - 1 + images.length) % images.length);
   const nextImg = () => setCurrentImg((p) => (p + 1) % images.length);
 
-  const formattedDate = project.createdAt
-    ? new Date(project.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long' })
+  const rawDate = project.projectDate || project.createdAt;
+  const formattedDate = rawDate
+    ? new Date(rawDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'long' })
     : null;
 
   return (
@@ -161,15 +162,28 @@ const ProjectDetailModal = ({ project, onClose }) => {
               <X size={18} />
             </button>
 
-            {/* Category Badge */}
-            <span style={{
-              position: 'absolute', top: 14, left: 14,
-              background: 'rgba(0,0,0,0.65)', color: '#fff',
-              borderRadius: 9999, padding: '4px 12px', fontSize: '0.75rem', fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase', backdropFilter: 'blur(4px)',
-            }}>
-              {project.category}
-            </span>
+            {/* Category & Hard-Coded Badges */}
+            <div style={{ position: 'absolute', top: 14, left: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{
+                background: 'rgba(0,0,0,0.65)', color: '#fff',
+                borderRadius: 9999, padding: '4px 12px', fontSize: '0.75rem', fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase', backdropFilter: 'blur(4px)',
+              }}>
+                {project.category}
+              </span>
+              {project.isHardCoded && (
+                <span style={{
+                  background: 'var(--accent-color)', color: 'var(--accent-inverse)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 9999, padding: '4px 12px', fontSize: '0.72rem', fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  letterSpacing: '0.04em', textTransform: 'uppercase',
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                }}>
+                  <Code2 size={12} /> Hard-Coded • Built Without AI
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Content */}

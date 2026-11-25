@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { sign } from 'hono/jwt';
-import User from '../models/User.js';
+import { getDB } from '../config/db.js';
 
 const generateToken = async (id, email, jwtSecret) => {
   return sign(
@@ -26,8 +26,13 @@ export const loginAdmin = async (c) => {
   const jwtSecret = c.env?.JWT_SECRET || 'fallback_secret_key';
 
   try {
+    const db = await getDB(c);
+    if (!db) {
+      return c.json({ message: 'Database connection unavailable' }, 503);
+    }
+
     const cleanEmail = email.trim().toLowerCase();
-    const user = await User.findOne({ email: cleanEmail });
+    const user = await db.collection('users').findOne({ email: cleanEmail });
 
     if (!user) {
       console.warn(`[Auth Login] User not found: "${cleanEmail}"`);

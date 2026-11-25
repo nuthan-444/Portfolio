@@ -550,6 +550,44 @@ button {
   border-color: var(--text-muted);
 }
 
+.project-card--hardcoded {
+  border: 1.5px solid var(--text-primary);
+  box-shadow: 5px 5px 0px var(--border-color);
+}
+
+.project-card--hardcoded:hover {
+  border-color: var(--text-primary);
+  box-shadow: 7px 7px 0px var(--text-primary);
+}
+
+.hardcoded-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--accent-color);
+  color: var(--accent-inverse);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.hardcoded-strip-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hardcoded-strip-tag {
+  font-size: 0.62rem;
+  opacity: 0.78;
+  letter-spacing: 0.06em;
+}
+
 .card-carousel {
   position: relative;
   width: 100%;

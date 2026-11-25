@@ -1,5 +1,6 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import { SkeletonCard } from './Skeleton';
 
@@ -7,15 +8,21 @@ const FILTERS = ['All', 'Web Dev', 'AI/ML'];
 
 const ProjectGrid = ({ projects, onEdit, onDelete, loading, onProjectClick }) => {
   const [activeFilter, setActiveFilter] = React.useState('All');
+  const [sortOrder, setSortOrder] = React.useState('newest'); // 'newest' | 'oldest'
 
-  // Sort newest first, then apply filter
-  const sorted = [...projects].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Sort by projectDate (falling back to createdAt), then apply category filter
+  const sorted = [...projects].sort((a, b) => {
+    const dateA = new Date(a.projectDate || a.createdAt || 0).getTime();
+    const dateB = new Date(b.projectDate || b.createdAt || 0).getTime();
+    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+  });
+
   const filtered = activeFilter === 'All' ? sorted : sorted.filter((p) => p.category === activeFilter);
 
   return (
     <div>
-      {/* Category Filter Pills */}
-      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '36px', flexWrap: 'wrap' }}>
+      {/* Category Filter Pills + Date Sort Toggle */}
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center', marginBottom: '36px', flexWrap: 'wrap' }}>
         {FILTERS.map((filter) => (
           <button
             key={filter}
@@ -35,6 +42,29 @@ const ProjectGrid = ({ projects, onEdit, onDelete, loading, onProjectClick }) =>
             {filter}
           </button>
         ))}
+
+        <button
+          type="button"
+          onClick={() => setSortOrder((prev) => (prev === 'newest' ? 'oldest' : 'newest'))}
+          title="Reorder projects by date"
+          style={{
+            padding: '8px 16px',
+            borderRadius: 9999,
+            border: '1px solid var(--border-color)',
+            background: 'var(--badge-bg)',
+            color: 'var(--text-primary)',
+            fontWeight: 600,
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {sortOrder === 'newest' ? <ArrowDownWideNarrow size={15} /> : <ArrowUpNarrowWide size={15} />}
+          {sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+        </button>
       </div>
 
       {/* Pinterest Masonry Grid */}

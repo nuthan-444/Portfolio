@@ -19,6 +19,7 @@ let memoryProjects = [
     techStack: ['Python', 'FastAPI', 'React', 'LangChain', 'Pinecone', 'PyTorch'],
     order: 1,
     count: 142,
+    projectDate: new Date('2026-01-15').toISOString(),
     createdAt: new Date('2026-01-15').toISOString(),
     updatedAt: new Date('2026-01-15').toISOString(),
   },
@@ -37,6 +38,7 @@ let memoryProjects = [
     techStack: ['React', 'Next.js', 'Node.js', 'Express', 'MongoDB', 'Redis', 'TailwindCSS'],
     order: 2,
     count: 98,
+    projectDate: new Date('2026-02-10').toISOString(),
     createdAt: new Date('2026-02-10').toISOString(),
     updatedAt: new Date('2026-02-10').toISOString(),
   },
@@ -55,6 +57,7 @@ let memoryProjects = [
     techStack: ['Python', 'OpenCV', 'YOLOv8', 'Flask', 'React', 'WebSockets'],
     order: 3,
     count: 210,
+    projectDate: new Date('2026-03-01').toISOString(),
     createdAt: new Date('2026-03-01').toISOString(),
     updatedAt: new Date('2026-03-01').toISOString(),
   },
@@ -73,22 +76,75 @@ let memoryProjects = [
     techStack: ['React', 'React Flow', 'GSAP', 'Express', 'MongoDB'],
     order: 4,
     count: 75,
+    projectDate: new Date('2026-03-20').toISOString(),
     createdAt: new Date('2026-03-20').toISOString(),
     updatedAt: new Date('2026-03-20').toISOString(),
   }
 ];
 
+const parseProjectDate = (value) => {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const parseBoolean = (value) =>
+  value === true || value === 'true' || value === '1' || value === 'on';
+
+const sortProjectsByDate = (projects, sort = 'newest') => {
+  const dir = sort === 'oldest' ? 1 : -1;
+  return [...projects].sort((a, b) => {
+    const dateA = new Date(a.projectDate || a.createdAt || 0).getTime();
+    const dateB = new Date(b.projectDate || b.createdAt || 0).getTime();
+    return (dateA - dateB) * dir;
+  });
+};
+
+const resolveOrderedImages = (imageOrderRaw, existingImages, uploadedNewImages) => {
+  if (!imageOrderRaw) return null;
+  let parsed;
+  try {
+    parsed = typeof imageOrderRaw === 'string' ? JSON.parse(imageOrderRaw) : imageOrderRaw;
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed)) return null;
+
+  const existingByPublicId = new Map(
+    (existingImages || []).filter((img) => img.publicId).map((img) => [img.publicId, img])
+  );
+  const existingByUrl = new Map(
+    (existingImages || []).map((img) => [img.url, img])
+  );
+
+  const finalImages = [];
+  for (const item of parsed) {
+    if (item?.kind === 'existing') {
+      const match =
+        (item.publicId && existingByPublicId.get(item.publicId)) ||
+        (item.url && existingByUrl.get(item.url));
+      if (match) {
+        finalImages.push({ url: match.url, publicId: match.publicId || '' });
+      }
+    } else if (item?.kind === 'new' && Number.isInteger(item.fileIndex)) {
+      const uploaded = uploadedNewImages[item.fileIndex];
+      if (uploaded) finalImages.push(uploaded);
+    }
+  }
+  return finalImages;
+};
+
 export const getProjects = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, sort } = req.query;
 
     if (Project.db && Project.db.readyState === 1) {
       let filter = {};
       if (category && category !== 'All') {
         filter.category = category;
       }
-      const projects = await Project.find(filter).sort({ order: 1, createdAt: -1 });
-      return res.json(projects);
+      const projects = await Project.find(filter).lean();
+      return res.json(sortProjectsByDate(projects, sort));
     }
 
     // Memory fallback
@@ -96,7 +152,7 @@ export const getProjects = async (req, res) => {
     if (category && category !== 'All') {
       filtered = memoryProjects.filter((p) => p.category === category);
     }
-    res.json(filtered);
+    res.json(sortProjectsByDate(filtered, sort));
   } catch (error) {
     console.error('Error fetching projects:', error);
     res.status(500).json({ message: 'Failed to fetch projects' });
@@ -125,7 +181,7 @@ export const getProjectById = async (req, res) => {
 
 export const createProject = async (req, res) => {
   try {
-    const { title, description, shortDescription, category, projectLink, githubLink, techStack, order } = req.body;
+    const { title, description, shortDescription, category, projectLink, githubLink, techStack, order, projectDate, isHardCoded } = req.body;
     let uploadedImages = [];
 
     if (req.files && req.files.length > 0) {
@@ -150,6 +206,10 @@ export const createProject = async (req, res) => {
       ? techStack.split(',').map((t) => t.trim()).filter(Boolean)
       : [];
 
+    const customDate = parseProjectDate(projectDate);
+    const now = new Date();
+    const effectiveDate = customDate || now;
+
     const projectData = {
       title,
       description,
@@ -160,6 +220,10 @@ export const createProject = async (req, res) => {
       githubLink: githubLink || '',
       techStack: parsedTechStack,
       order: Number(order) || 0,
+      projectDate: effectiveDate,
+      isHardCoded: parseBoolean(isHardCoded),
+      createdAt: effectiveDate,
+      updatedAt: now,
       count: 0,
     };
 
@@ -172,8 +236,9 @@ export const createProject = async (req, res) => {
     const newProj = {
       _id: `proj_${Date.now()}`,
       ...projectData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      projectDate: effectiveDate.toISOString(),
+      createdAt: effectiveDate.toISOString(),
+      updatedAt: now.toISOString(),
     };
     memoryProjects.unshift(newProj);
     res.status(201).json(newProj);
@@ -187,7 +252,7 @@ export const updateProject = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const { title, description, shortDescription, category, projectLink, githubLink, techStack, order } = req.body;
+    const { title, description, shortDescription, category, projectLink, githubLink, techStack, order, projectDate, imageOrder, isHardCoded } = req.body;
 
     const parsedTechStack = Array.isArray(techStack)
       ? techStack
@@ -195,7 +260,7 @@ export const updateProject = async (req, res) => {
       ? techStack.split(',').map((t) => t.trim()).filter(Boolean)
       : undefined;
 
-    let newImages = [];
+    const newImages = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const uploaded = await uploadToCloudinary(file.buffer);
@@ -203,22 +268,51 @@ export const updateProject = async (req, res) => {
       }
     }
 
+    const customDate = parseProjectDate(projectDate);
+
     if (Project.db && Project.db.readyState === 1) {
       const existing = await Project.findById(id);
       if (!existing) return res.status(404).json({ message: 'Project not found' });
 
-      if (title) existing.title = title;
-      if (description) existing.description = description;
-      if (shortDescription) existing.shortDescription = shortDescription;
-      if (category) existing.category = category;
-      if (projectLink !== undefined) existing.projectLink = projectLink;
-      if (githubLink !== undefined) existing.githubLink = githubLink;
-      if (parsedTechStack) existing.techStack = parsedTechStack;
-      if (order !== undefined) existing.order = Number(order);
-      if (newImages.length > 0) existing.images = newImages;
+      const updates = { updatedAt: new Date() };
+      if (title) updates.title = title;
+      if (description) updates.description = description;
+      if (shortDescription) updates.shortDescription = shortDescription;
+      if (category) updates.category = category;
+      if (projectLink !== undefined) updates.projectLink = projectLink;
+      if (githubLink !== undefined) updates.githubLink = githubLink;
+      if (parsedTechStack) updates.techStack = parsedTechStack;
+      if (order !== undefined) updates.order = Number(order);
+      if (isHardCoded !== undefined) updates.isHardCoded = parseBoolean(isHardCoded);
+      if (customDate) {
+        updates.projectDate = customDate;
+        updates.createdAt = customDate;
+      }
 
-      await existing.save();
-      return res.json(existing);
+      const orderedImages = resolveOrderedImages(imageOrder, existing.images, newImages);
+      if (orderedImages !== null) {
+        if (orderedImages.length === 0 && req.body.imageUrl) {
+          orderedImages.push({ url: req.body.imageUrl, publicId: `url_${Date.now()}` });
+        }
+        const keptIds = new Set(orderedImages.map((img) => img.publicId).filter(Boolean));
+        for (const oldImg of existing.images || []) {
+          if (oldImg.publicId && !keptIds.has(oldImg.publicId)) {
+            deleteFromCloudinary(oldImg.publicId).catch(() => {});
+          }
+        }
+        if (orderedImages.length > 0) {
+          updates.images = orderedImages;
+        }
+      } else if (newImages.length > 0) {
+        updates.images = newImages;
+      }
+
+      const updated = await Project.findByIdAndUpdate(
+        id,
+        { $set: updates },
+        { new: true, timestamps: false }
+      );
+      return res.json(updated);
     }
 
     // Memory fallback
@@ -233,7 +327,18 @@ export const updateProject = async (req, res) => {
     if (githubLink !== undefined) memoryProjects[idx].githubLink = githubLink;
     if (parsedTechStack) memoryProjects[idx].techStack = parsedTechStack;
     if (order !== undefined) memoryProjects[idx].order = Number(order);
-    if (newImages.length > 0) memoryProjects[idx].images = newImages;
+    if (isHardCoded !== undefined) memoryProjects[idx].isHardCoded = parseBoolean(isHardCoded);
+    if (customDate) {
+      memoryProjects[idx].projectDate = customDate.toISOString();
+      memoryProjects[idx].createdAt = customDate.toISOString();
+    }
+
+    const orderedImages = resolveOrderedImages(imageOrder, memoryProjects[idx].images, newImages);
+    if (orderedImages !== null && orderedImages.length > 0) {
+      memoryProjects[idx].images = orderedImages;
+    } else if (newImages.length > 0) {
+      memoryProjects[idx].images = newImages;
+    }
     memoryProjects[idx].updatedAt = new Date().toISOString();
 
     res.json(memoryProjects[idx]);
