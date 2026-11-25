@@ -2,10 +2,14 @@ import bcrypt from 'bcryptjs';
 import { sign } from 'hono/jwt';
 import { getDB } from '../config/db.js';
 
+const DEFAULT_JWT_SECRET = 'steve_ai_ml_portfolio_super_secret_jwt_key_2026';
+
 const generateToken = async (id, email, jwtSecret) => {
+  const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24; // 24h
   return sign(
-    { id: String(id), email, isAdmin: true },
-    jwtSecret || 'fallback_secret_key'
+    { id: String(id), email, isAdmin: true, exp },
+    jwtSecret || DEFAULT_JWT_SECRET,
+    'HS256'
   );
 };
 
@@ -23,7 +27,7 @@ export const loginAdmin = async (c) => {
     return c.json({ message: 'Please provide both email and password' }, 400);
   }
 
-  const jwtSecret = c.env?.JWT_SECRET || 'fallback_secret_key';
+  const jwtSecret = c.env?.JWT_SECRET || DEFAULT_JWT_SECRET;
 
   try {
     const db = await getDB(c);
