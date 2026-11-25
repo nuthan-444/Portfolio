@@ -5,7 +5,7 @@ export const connectDB = async () => {
     let mongoUri = process.env.MONGODB_URI || process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/MyPortfolio';
     
     if (!mongoUri.startsWith('mongodb://') && !mongoUri.startsWith('mongodb+srv://')) {
-      mongoUri = 'mongodb://127.0.0.1:27017/MyPortfolio';
+      mongoUri = 'mongodb://AtlasData/MyPortfolio';
     }
 
     const conn = await mongoose.connect(mongoUri, {
